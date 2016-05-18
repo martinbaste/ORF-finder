@@ -16,7 +16,7 @@ import math
 
 #Python throws an exception when sending the output on a pipe, the following two lines solve this.
 from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL) 
+signal(SIGPIPE,SIG_DFL)
 
 ##GLOBAL
 
@@ -110,7 +110,7 @@ class ORF:
     self.length = len(seq)
     self.strand = strand # '+' or '-'
     self.b20 = b20 #20 bases upstream of the gene, to calculate SD presence
-    self.SDscore = self.checkSD() 
+    self.SDscore = self.checkSD()
     ##SD filter is here:
     if FILTERSD and self.SDscore > 0.0:
       ORFList.append(self) #Won't append to ORFList if filtered, and stop calculating
@@ -120,7 +120,7 @@ class ORF:
     self.GC2 = self.GC(2)
     self.GC3 = self.GC(3)
     self.trTable, self.aaCount = self.createTransTable()
-  
+
   def GC(self,frame): #Return GC content in frame
     ##NOTE, the non-canonical bases here are counted as CG
     seq = self.seq[frame-1::3]
@@ -142,8 +142,8 @@ class ORF:
     return score
 
 
-  def createTransTable(self): 
-    #Creates self codon table count and adds codon count to global as well. 
+  def createTransTable(self):
+    #Creates self codon table count and adds codon count to global as well.
     #Creates aminoacid count and updates global aminoacid count as well (to calculate codon frequency per amino acid).
     global globalTrTable
     trTable = globalTrTable.copy()
@@ -163,8 +163,8 @@ class ORF:
           aaCount[aaTable[sub]] = 1
     return (trTable, aaCount)
 
-  
-  
+
+
   def scoreTr(self): #Score self Trtable against global tr table (compare frequencies of each codon)
     score = 0
     for key in self.trTable.keys():
@@ -177,24 +177,24 @@ class ORF:
       score += (self.trTable[key]-globalTrTable[key])**2 #Score is sum of the squares of the differences
     self.TRscore = score
 
-    
+
   def printToFile(self, filename):
     with open(filename,'a') as o:
       o.write("\t".join([self.seqId,'MartinsGenePred','ORF', str(self.start), str(self.stop),".",self.strand,".","; ".join(["GC1=" + str(self.GC1),"GC2=" + str(self.GC2),"GC3=" + str(self.GC3),"SDscore="+str(self.SDscore),"TRscore="+str(self.TRscore),"SeqLength="+str(self.seqIdLength)])])+'\n')
- 
+
   def remove(self):
     ORFList.remove(self)
 
 
-class Seq: 
+class Seq:
   def __init__(self,seqId,seq1):
-    self.seqId = seqId 
+    self.seqId = seqId
     self.seq1 = seq1
     self.seq2 = revComp(seq1) #Reverse complement
-  
+
   def findORFs(self): #Find ORFs in self.
     ORFs = []
-    
+
     #Strand +
     starts = []
     stops = []
@@ -203,12 +203,12 @@ class Seq:
       starts.append(m.start())
     for m in re.finditer(STOP,self.seq1):
       stops.append(m.start())
-    
+
     starts.sort()
     stops.sort()
-    
+
     for sr in starts:
-      done = False 
+      done = False
       i = 0
       while not done and i< len(stops): #Did we find a suitable stop codon?
         sp = stops[i]
@@ -218,8 +218,8 @@ class Seq:
           ORFs.append(ORF(self.seq1[sr:sp+3], '+', self.seq1[sr-20:sr],self.seqId,sr,sp,len(self.seq1)))
           done = True
         i += 1
-        
-        
+
+
     #Strand -
     starts = []
     stops = []
@@ -245,7 +245,7 @@ class Seq:
 
 def revComp(seq): #Reverse complement
   seq2 = ''
-  d = {'A':'T','T':'A','C':'G','G':'C','M':'K','K':'M','R':'Y','Y':'R','S':'W','W':'S','N':'N'}
+  d = {'A':'T','T':'A','C':'G','G':'C','M':'K','K':'M','R':'Y','Y':'R','S':'S','W':'W','N':'N'}
   for i in range(len(seq)):
     seq2 = d[seq[i]] + seq2
   return seq2
@@ -260,19 +260,19 @@ def parsefile(f): #Return all sequences on a fasta file.
   for line in f:
     line = line.strip()
     #Look for seq name
-    if line[0] == ">": 
+    if line[0] == ">":
       m = re.search("(?<=\>).*$",line)
-      
+
       if not first:
         seqs.append( Seq(seqName,sequence))
       first = False
-      seqName = m.group(0)      
+      seqName = m.group(0)
       sequence = ''
     else:
       sequence += line.upper()
   seqs.append(Seq(seqName,sequence))
   return seqs
-      
+
 def getGC(seqs): #Calculate global GC content
   total = 0
   GC = 0
@@ -291,7 +291,7 @@ def updateTrTable(): #Turn global codon count into frequencies.
       globalTrTable[key] = globalTrTable[key]/globalAaCount[aaTable[key]]
     else:
       globalTrTable[key] = 0
-    
+
 
 def analyse_seqs(seqs):
   oprint("Searching for ORFs in sequences...")
@@ -304,7 +304,7 @@ def analyse_seqs(seqs):
     oprint("{0} ORFs found. {1} were filtered out because of 0 Shine-Dalgarno probability.".format(ORFcount, ORFcount-len(ORFList)))
   else:
     oprint("{0} ORFs found.".format(ORFcount))
-    
+
   updateTrTable() #Turn global codon count into frequencies.
   oprint("Scoring ORFs and writing to file...")
   scoreAndWriteORF()
@@ -370,7 +370,7 @@ Options:
       except ValueError:
         print("Error: Longest ORF size must be integer")
         quit()
-    elif opt == '-m':     
+    elif opt == '-m':
       try:
         SHORTESTORF = int(arg)
       except ValueError:
@@ -391,7 +391,7 @@ Options:
     print("Error: File not found")
     quit()
   oprint("Reading File")
-  seqs = parsefile(fasta)  
+  seqs = parsefile(fasta)
   fasta.close()
   oprint(str(len(seqs)) + " sequences read.")
   GCcontent = getGC(seqs)
@@ -399,7 +399,7 @@ Options:
   o = open(OUTFILE,'w')
   o.close()
   analyse_seqs(seqs)
-  
-  
+
+
 if __name__ == "__main__":
   main(sys.argv[1:])
